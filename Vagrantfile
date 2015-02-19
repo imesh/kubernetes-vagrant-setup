@@ -91,7 +91,6 @@ Vagrant.configure("2") do |config|
 
     master.vm.provision :file, :source => MASTER_CONFIG_PATH, :destination => "/tmp/vagrantfile-user-data"
     master.vm.provision :shell, :inline => "sed -e \"s/%MINION_IP_ADDRS%/#{MASTER_IP_ADDR},#{MINION_IP_ADDRS.join(',')}/g\" -i /tmp/vagrantfile-user-data", :privileged => true
-    master.vm.provision :shell, :inline => "sudo systemctl restart controller-manager", :privileged => true
 
     provision.call(master, %w[flanneld kubecfg kubectl kube-controller-manager kube-apiserver kubelet kube-proxy kube-scheduler], "master")
   end
