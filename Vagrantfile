@@ -3,9 +3,9 @@
 
 require 'fileutils'
 
-NUMBER_OF_MINIONS = 2
+NUMBER_OF_MINIONS = 1
 COREOS_CHANNEL = "alpha"
-COREOS_VERSION = "536.0.0"
+COREOS_VERSION = "459.0.0"
 ENABLE_SERIAL_LOGGING = false
 
 BASE_IP_ADDR = "172.17.8"
@@ -91,18 +91,19 @@ Vagrant.configure("2") do |config|
 
     master.vm.provision :file, :source => MASTER_CONFIG_PATH, :destination => "/tmp/vagrantfile-user-data"
     master.vm.provision :shell, :inline => "sed -e \"s/%MINION_IP_ADDRS%/#{MASTER_IP_ADDR},#{MINION_IP_ADDRS.join(',')}/g\" -i /tmp/vagrantfile-user-data", :privileged => true
+    master.vm.provision :shell, :inline => "sudo systemctl restart controller-manager", :privileged => true
 
     provision.call(master, %w[flanneld kubecfg kubectl kube-controller-manager kube-apiserver kubelet kube-proxy kube-scheduler], "master")
   end
 
-  #(1..NUMBER_OF_MINIONS).each do |i|
-  #  config.vm.define "minion-#{i}" do |minion|
-  #    minion.vm.hostname = "minion-#{i}"
-  #    minion.vm.network :private_network, ip: MINION_IP_ADDRS[i-1]
-#
- #     minion.vm.provision :file, :source => MINION_CONFIG_PATH, :destination => "/tmp/vagrantfile-user-data"
-#
- #     provision.call(minion, %w[flanneld kubelet kube-proxy kube-scheduler], "minion-#{i}")
-  #  end
-  #end
+  (1..NUMBER_OF_MINIONS).each do |i|
+    config.vm.define "minion-#{i}" do |minion|
+      minion.vm.hostname = "minion-#{i}"
+      minion.vm.network :private_network, ip: MINION_IP_ADDRS[i-1]
+
+      minion.vm.provision :file, :source => MINION_CONFIG_PATH, :destination => "/tmp/vagrantfile-user-data"
+
+      provision.call(minion, %w[flanneld kubelet kube-proxy kube-scheduler], "minion-#{i}")
+    end
+  end
 end
