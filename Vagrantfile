@@ -5,7 +5,7 @@ require 'fileutils'
 
 NUMBER_OF_MINIONS = 2
 COREOS_CHANNEL = "alpha"
-COREOS_MINIMUM_VERSION = "509.0.0"
+COREOS_VERSION = "536.0.0"
 ENABLE_SERIAL_LOGGING = false
 
 BASE_IP_ADDR = "172.17.8"
@@ -24,7 +24,7 @@ ETCD_DISCOVERY_CMD = "sed -e \"s/%ETCD_DISCOVERY%/#{ETCD_DISCOVERY}/g\" -i /tmp/
 Vagrant.require_version ">= 1.6.0"
 Vagrant.configure("2") do |config|
   config.vm.box = "coreos-#{COREOS_CHANNEL}"
-  config.vm.box_version = ">= #{COREOS_MINIMUM_VERSION}"
+  config.vm.box_version = "= #{COREOS_MINIMUM_VERSION}"
   config.vm.box_url = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json"
 
   config.vm.provider :virtualbox do |v|
