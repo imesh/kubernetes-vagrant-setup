@@ -25,7 +25,7 @@ Vagrant.require_version ">= 1.6.0"
 Vagrant.configure("2") do |config|
   config.vm.box = "coreos-#{COREOS_CHANNEL}"
   config.vm.box_version = "= #{COREOS_VERSION}"
-  config.vm.box_url = "http://#{COREOS_CHANNEL}.release.core-os.net/amd64-usr/current/coreos_production_vagrant.json"
+  config.vm.box_url = "coreos_production_vagrant.json"
 
   config.vm.provider :virtualbox do |v|
     # On VirtualBox, we don't have guest additions or a functional vboxsf
