@@ -2,12 +2,12 @@
   "name": "coreos-alpha",
   "description": "CoreOS alpha",
   "versions": [{
-    "version": "459.0.0",
+    "version": "536.0.0",
     "providers": [{
       "name": "virtualbox",
-      "url": "http://alpha.release.core-os.net/amd64-usr/459.0.0/coreos_production_vagrant.box",
+      "url": "http://alpha.release.core-os.net/amd64-usr/536.0.0/coreos_production_vagrant.box",
       "checksum_type": "sha256",
-      "checksum": "2cedab99396d488c4b3cf196e33db2502dccb60f2978bcfb2c3ab4638fa5609c"
+      "checksum": "746d4a4cc51b8832a08440f2396d5b75bca12978348957e4b652a11cca0fefcc"
     }]
   }]
 }
