@@ -58,6 +58,12 @@ If more than one minion is needed, run the below command with the required numbe
 NUM_INSTANCES=2 vagrant up
 ```
 
+Wait until the minion(s) get connected to the cluster. Once the state of the minions are changed to Ready, the Kubernetes cluster is ready for use:
+
+```
+kubectl get minions
+```
+
 ## Licensing
 
 [Apache License, Version 2.0](http://opensource.org/licenses/Apache-2.0).
