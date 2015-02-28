@@ -26,14 +26,14 @@ First start the master node:
 vagrant up master
 ```
 
-Wait until it has finished downloading Kybernetes binaries and provisioned a Docker registry:
+Wait until it has finished downloading Kybernetes binaries and provisioned a Docker registry. This may take several minutes depending on the speed of your internet connection. Login to master node and list docker images:
 
 ```
 vagrant ssh master
 docker images
 ```
 
-Once the registry docker image is downloaded execute the following command to see whether the docker registry has started:
+Once the registry docker image is completely downloaded execute the following command to see whether the docker registry has started:
 
 ```
 docker ps
@@ -45,7 +45,7 @@ Afterwards, bring up the minion:
 vagrant up
 ```
 
-If more than one minions are needed, add the following environment variable:
+If more than one minion is needed, run the below command with the required number of instances:
 
 ```
 NUM_INSTANCES=2 vagrant up
