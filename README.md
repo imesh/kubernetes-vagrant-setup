@@ -9,7 +9,7 @@ cluster on
  * **[Virtualbox](https://www.virtualbox.org)**
  * **kubectl** (Kubernetes CLI)
 
-## How to run
+## How to Run
 
 ### Install kubectl
 
@@ -18,7 +18,7 @@ cluster on
 $(./kubLocalSetup shellinit)
 ```
 
-### Set-up cluster
+### Set-up Kubernetes Cluster
 
 First start the master node:
 
@@ -45,7 +45,7 @@ Afterwards, bring up the minion:
 vagrant up
 ```
 
-If more than one minions is needed, add the following environment variable:
+If more than one minions are needed, add the following environment variable:
 
 ```
 NUM_INSTANCES=2 vagrant up
