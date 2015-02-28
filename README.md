@@ -5,17 +5,24 @@ cluster on
 
 ## Pre-requisites
 
- * **[Vagrant](https://www.vagrantup.com)**
- * **[Virtualbox](https://www.virtualbox.org)**
- * **kubectl** (Kubernetes CLI)
+ * **[Vagrant 1.7.2+](https://www.vagrantup.com)**
+ * **[Virtualbox 4.3.20+](https://www.virtualbox.org)**
+ * **kubectl**
 
 ## How to Run
 
 ### Install kubectl
 
+Execute the following script to install kubectl. This is the Kubernetes CLI which is needed for interacting with the Kubernetes cluser:
+
 ```
 ./kubLocalSetup install
-$(./kubLocalSetup shellinit)
+```
+
+Execute the below command to export Kubernetes API URL to the shell. You could add this to your bash profie if you need it to be persisted:
+
+```
+export KUBERNETES_MASTER=http://172.17.8.101:8080
 ```
 
 ### Set-up Kubernetes Cluster
