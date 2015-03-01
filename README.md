@@ -1,7 +1,7 @@
 # kubernetes-vagrant-setup
 A vagrant script to setup a **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)** (0.11.0)
 cluster on 
-**[CoreOS](https://coreos.com)** [(alpha/598.0.0)](https://coreos.com/releases/). Thanks to [Pires](https://github.com/pires) for the original [implementation](https://github.com/pires/kubernetes-vagrant-coreos-cluster).
+**[CoreOS](https://coreos.com)** [(alpha/593.0.0)](https://coreos.com/releases/). Thanks to [Pires](https://github.com/pires) for the original [implementation](https://github.com/pires/kubernetes-vagrant-coreos-cluster).
 
 ## Pre-requisites
 
