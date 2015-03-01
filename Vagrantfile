@@ -12,7 +12,7 @@ NODE_YAML = File.join(File.dirname(__FILE__), "node.yaml")
 
 $num_node_instances =  ENV['NUM_INSTANCES'] || 1
 $update_channel = ENV['CHANNEL'] || 'alpha'
-$coreos_version = '598.0.0'
+$coreos_version = '593.0.0'
 $enable_serial_logging = (ENV['SERIAL_LOGGING'].to_s.downcase == 'true')
 $vb_gui = (ENV['GUI'].to_s.downcase == 'true')
 $vb_master_memory = ENV['MASTER_MEM'] || 512
