@@ -1,4 +1,4 @@
-# kubernetes-vagrant-coreos-cluster
+# kubernetes-vagrant-cluster
 Turnkey **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)**
 cluster setup with **[Vagrant](https://www.vagrantup.com)** (1.7.2+) and
 **[CoreOS](https://coreos.com)**.
