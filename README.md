@@ -7,15 +7,16 @@ cluster on
 
  * **[Vagrant 1.7.2+](https://www.vagrantup.com)**
  * **[Virtualbox 4.3.20+](https://www.virtualbox.org)**
- * **[wget] On **MacOS X** (and assuming you have [homebrew](http://brew.sh) already installed) run
-   ```
-   brew update
-   brew install wget
-   ```
+ * **[wget] (http://www.gnu.org/software/wget)**
 
 ## How to Run
 
 ### Set-up Kubernetes Cluster
+
+Disable DHCP server in VirtualBox:
+```
+VBoxManage dhcpserver remove --netname HostInterfaceNetworking-vboxnet0
+```
 
 Execute the following vagrant command to start the Kubernetes cluster, this will start one master node and one minion:
 
