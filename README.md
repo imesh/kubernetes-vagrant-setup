@@ -34,9 +34,18 @@ Wait until the minion(s) get connected to the cluster. Once the state of the min
 
 ```
 kubectl get minions
+
+Due to some reason get minions command is not working in this Kubernetes version.
 ```
+
 ```
 kubectl get services
+
+NAME            LABELS                                                              SELECTOR           IP(S)         PORT(S)
+kube-dns        k8s-app=kube-dns,kubernetes.io/cluster-service=true,name=kube-dns   k8s-app=kube-dns   10.100.0.10   53/UDP
+                                                                                                                     53/TCP
+kubernetes      component=apiserver,provider=kubernetes                             <none>             10.100.0.2    443/TCP
+kubernetes-ro   component=apiserver,provider=kubernetes                             <none>             10.100.0.1    80/TCP
 ```
 
 ## Clean-up
