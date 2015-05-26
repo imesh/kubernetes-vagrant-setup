@@ -7,7 +7,7 @@ cluster on
 
  * **[Vagrant 1.7.2+](https://www.vagrantup.com)**
  * **[Virtualbox 4.3.20+](https://www.virtualbox.org)**
- * **[wget] (http://www.gnu.org/software/wget)**
+ * **[Wget] (http://www.gnu.org/software/wget)**
 
 ## How to Run
 
@@ -30,7 +30,7 @@ If more than one minion is needed, run the below command with the required numbe
 NUM_INSTANCES=2 vagrant up
 ```
 
-Wait until the minion(s) get connected to the cluster. Once the state of the minions are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their results:
+Wait until the minion(s) get connected to the cluster. Once the state of the minions are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:
 
 ```
 kubectl get minions
