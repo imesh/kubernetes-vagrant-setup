@@ -55,7 +55,7 @@ NODE_YAML = File.join(File.dirname(__FILE__), "node.yaml")
 USE_DOCKERCFG = ENV['USE_DOCKERCFG'] || false
 DOCKERCFG = File.expand_path(ENV['DOCKERCFG'] || "~/.dockercfg")
 
-KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '0.17.0'
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || "0.17.0"
 
 CHANNEL = ENV['CHANNEL'] || 'alpha'
 if CHANNEL != 'alpha'
@@ -68,7 +68,7 @@ if CHANNEL != 'alpha'
   puts "============================================================================="
 end
 
-COREOS_VERSION = ENV['COREOS_VERSION'] || 'latest'
+COREOS_VERSION = ENV['COREOS_VERSION'] || "681.0.0"
 upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
 if COREOS_VERSION == "latest"
   upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/current"
@@ -164,6 +164,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     config.vm.define vmName = hostname do |kHost|
       kHost.vm.hostname = vmName
+      # Avoid CoreOS box being automatically updated
+      kHost.vm.box_check_update = false
       # vagrant-triggers has no concept of global triggers so to avoid having
       # then to run as many times as the total number of VMs we only call them
       # in the master (re: emyl/vagrant-triggers#13)...
