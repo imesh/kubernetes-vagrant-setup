@@ -1,0 +1,39 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "service-1",
+        "namespace": "default",
+        "selfLink": "/api/v1/namespaces/default/services/service-1",
+        "uid": "936cf060-1358-11e5-b5e4-080027718c64",
+        "resourceVersion": "799",
+        "creationTimestamp": "2015-06-15T12:18:05Z",
+        "labels": {
+            "name": "single-cartridge-app-my-php-php-domain"
+        }
+    },
+    "spec": {
+        "ports": [
+            {
+                "name": "http-80",
+                "protocol": "TCP",
+                "port": 4500,
+                "targetPort": 80,
+                "nodePort": 0
+            }
+        ],
+        "selector": {
+            "name": "single-cartridge-app-my-php-php-domain"
+        },
+        "clusterIP": "10.100.163.2",
+        "type": "ClusterIP",
+        "deprecatedPublicIPs": [
+            "172.17.8.102",
+            "172.17.8.103"
+        ],
+        "sessionAffinity": "ClientIP"
+    },
+    "status": {
+        "loadBalancer": {}
+    }
+}

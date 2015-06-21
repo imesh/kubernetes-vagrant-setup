@@ -32,6 +32,13 @@ module OS
 end
 
 required_plugins = %w(vagrant-triggers)
+
+# check either 'http_proxy' or 'HTTP_PROXY' environment variable
+enable_proxy = !(ENV['HTTP_PROXY'] || ENV['http_proxy'] || '').empty?
+if enable_proxy
+  required_plugins.push('vagrant-proxyconf')
+end
+
 if OS.windows?
   required_plugins.push('vagrant-winnfsd')
 end
@@ -51,11 +58,12 @@ Vagrant.require_version ">= 1.6.0"
 
 MASTER_YAML = File.join(File.dirname(__FILE__), "master.yaml")
 NODE_YAML = File.join(File.dirname(__FILE__), "node.yaml")
+SSL_FILE = File.join(File.dirname(__FILE__), "kube-serviceaccount.key")
 
 USE_DOCKERCFG = ENV['USE_DOCKERCFG'] || false
 DOCKERCFG = File.expand_path(ENV['DOCKERCFG'] || "~/.dockercfg")
 
-KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || "0.17.0"
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '0.18.0'
 
 CHANNEL = ENV['CHANNEL'] || 'alpha'
 if CHANNEL != 'alpha'
@@ -68,7 +76,7 @@ if CHANNEL != 'alpha'
   puts "============================================================================="
 end
 
-COREOS_VERSION = ENV['COREOS_VERSION'] || "681.0.0"
+COREOS_VERSION = ENV['COREOS_VERSION'] || 'latest'
 upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
 if COREOS_VERSION == "latest"
   upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/current"
@@ -77,27 +85,36 @@ if COREOS_VERSION == "latest"
     open(url).read().scan(/COREOS_VERSION=.*/)[0].gsub('COREOS_VERSION=', ''))
 end
 
-NUM_INSTANCES = ENV['NUM_INSTANCES'] || 1
+NUM_INSTANCES = ENV['NUM_INSTANCES'] || 2
 
-MASTER_MEM = ENV['MASTER_MEM'] || 512
+MASTER_MEM = ENV['MASTER_MEM'] || 1024
 MASTER_CPUS = ENV['MASTER_CPUS'] || 1
 
-NODE_MEM= ENV['NODE_MEM'] || 4096
-NODE_CPUS = ENV['NODE_CPUS'] || 4
+NODE_MEM= ENV['NODE_MEM'] || 2048
+NODE_CPUS = ENV['NODE_CPUS'] || 1
 
 BASE_IP_ADDR = ENV['BASE_IP_ADDR'] || "172.17.8"
 
-DNS_DOMAIN = ENV['DNS_DOMAIN'] || "k8s.local"
+DNS_DOMAIN = ENV['DNS_DOMAIN'] || "cluster.local"
 DNS_UPSTREAM_SERVERS = ENV['DNS_UPSTREAM_SERVERS'] || "8.8.8.8:53,8.8.4.4:53"
 
 SERIAL_LOGGING = (ENV['SERIAL_LOGGING'].to_s.downcase == 'true')
 GUI = (ENV['GUI'].to_s.downcase == 'true')
 
-CLOUD_PROVIDER = ENV['CLOUD_PROVIDER'].to_s.downcase || 'vagrant'
+if enable_proxy
+  HTTP_PROXY = ENV['HTTP_PROXY'] || ENV['http_proxy']
+  HTTPS_PROXY = ENV['HTTPS_PROXY'] || ENV['https_proxy']
+  NO_PROXY = ENV['NO_PROXY'] || ENV['no_proxy'] || "localhost"
+end
+
+REMOVE_VAGRANTFILE_USER_DATA_BEFORE_HALT = (ENV['REMOVE_VAGRANTFILE_USER_DATA_BEFORE_HALT'].to_s.downcase == 'true')
+# if this is set true, remember to use --provision when executing vagrant up / reload
+
+CLOUD_PROVIDER = ENV['CLOUD_PROVIDER'].to_s.downcase
 validCloudProviders = [ 'gce', 'gke', 'aws', 'azure', 'vagrant', 'vsphere',
   'libvirt-coreos', 'juju' ]
 Object.redefine_const(:CLOUD_PROVIDER,
-  'vagrant') unless validCloudProviders.include?(CLOUD_PROVIDER)
+  '') unless validCloudProviders.include?(CLOUD_PROVIDER)
 
 (1..(NUM_INSTANCES.to_i + 1)).each do |i|
   case i
@@ -148,6 +165,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.vbguest.auto_update = false
   end
 
+  # setup VM proxy to system proxy environment
+  if Vagrant.has_plugin?("vagrant-proxyconf") && enable_proxy
+    config.proxy.http = HTTP_PROXY
+    config.proxy.https = HTTPS_PROXY
+    # most http tools, like wget and curl do not undestand IP range
+    # thus adding each node one by one to no_proxy
+    (1..(NUM_INSTANCES.to_i + 1)).each do |i|
+      Object.redefine_const(:NO_PROXY, "#{NO_PROXY},#{BASE_IP_ADDR}.#{i+100}")
+    end
+    config.proxy.no_proxy = NO_PROXY
+    # proxyconf plugin use wrong approach to set Docker proxy for CoreOS
+    # force proxyconf to skip Docker proxy setup
+    config.proxy.enabled = { docker: false }
+  end
+
   (1..(NUM_INSTANCES.to_i + 1)).each do |i|
     if i == 1
       hostname = "master"
@@ -164,8 +196,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     config.vm.define vmName = hostname do |kHost|
       kHost.vm.hostname = vmName
-      # Avoid CoreOS box being automatically updated
-      kHost.vm.box_check_update = false
       # vagrant-triggers has no concept of global triggers so to avoid having
       # then to run as many times as the total number of VMs we only call them
       # in the master (re: emyl/vagrant-triggers#13)...
@@ -176,8 +206,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           system "cp setup.tmpl temp/setup"
           system "sed -e 's|__KUBERNETES_VERSION__|#{KUBERNETES_VERSION}|g' -i#{sedInplaceArg} ./temp/setup"
           system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/setup"
+          if enable_proxy
+            system "sed -e 's|__PROXY_LINE__||g' -i#{sedInplaceArg} ./temp/setup"
+            system "sed -e 's|__NO_PROXY__|#{NO_PROXY}|g' -i#{sedInplaceArg} ./temp/setup"
+          else
+            system "sed -e '/__PROXY_LINE__/d' -i#{sedInplaceArg} ./temp/setup"
+          end
           system "chmod +x temp/setup"
-          
+
           info "Configuring Kubernetes cluster DNS..."
           system "cp dns/dns-controller.yaml.tmpl temp/dns-controller.yaml"
           system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/dns-controller.yaml"
@@ -196,7 +232,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           system "ssh-add ~/.vagrant.d/insecure_private_key"
           system "rm -rf ~/.fleetctl/known_hosts"
         end
-        
+
         kHost.trigger.after [:up] do
           info "Installing kubectl for the kubernetes version we just bootstrapped..."
           if OS.windows?
@@ -266,7 +302,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       end
 
       kHost.trigger.before [:halt, :reload] do
-        run_remote "sudo rm -f /var/lib/coreos-vagrant/vagrantfile-user-data"
+        if REMOVE_VAGRANTFILE_USER_DATA_BEFORE_HALT
+          run_remote "sudo rm -f /var/lib/coreos-vagrant/vagrantfile-user-data"
+        end
       end
 
       kHost.trigger.before [:destroy] do
@@ -352,15 +390,29 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
          :source => "#{DOCKERCFG}", :destination => "/home/core/.dockercfg"
 
         kHost.vm.provision :shell, run: "always" do |s|
-          s.inline = "cp /home/core/.dockercfg /.dockercfg"
+          s.inline = "cp /home/core/.dockercfg /root/.dockercfg"
           s.privileged = true
         end
       end
 
+      if File.exist?(SSL_FILE)
+        kHost.vm.provision :file, :source => "#{SSL_FILE}", :destination => "/tmp/kube-serviceaccount.key"
+      end
+
       if File.exist?(cfg)
         kHost.vm.provision :file, :source => "#{cfg}", :destination => "/tmp/vagrantfile-user-data"
+        if enable_proxy
+          kHost.vm.provision :shell, :privileged => true,
+          inline: <<-EOF
+          sed -i "s|__PROXY_LINE__||g" /tmp/vagrantfile-user-data
+          sed -i "s|__HTTP_PROXY__|#{HTTP_PROXY}|g" /tmp/vagrantfile-user-data
+          sed -i "s|__HTTPS_PROXY__|#{HTTPS_PROXY}|g" /tmp/vagrantfile-user-data
+          sed -i "s|__NO_PROXY__|#{NO_PROXY}|g" /tmp/vagrantfile-user-data
+          EOF
+        end
         kHost.vm.provision :shell, :privileged => true,
         inline: <<-EOF
+          sed -i "/__PROXY_LINE__/d" /tmp/vagrantfile-user-data
           sed -i "s,__RELEASE__,v#{KUBERNETES_VERSION},g" /tmp/vagrantfile-user-data
           sed -i "s,__CHANNEL__,v#{CHANNEL},g" /tmp/vagrantfile-user-data
           sed -i "s,__NAME__,#{hostname},g" /tmp/vagrantfile-user-data
