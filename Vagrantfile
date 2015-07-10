@@ -242,6 +242,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           end
 
           info "Waiting for Kubernetes master to become ready..."
+          info "Connecting to http://#{MASTER_IP}:8080"
           j, uri, res = 0, URI("http://#{MASTER_IP}:8080"), nil
           loop do
             j += 1
@@ -250,7 +251,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
               sleep 10
             end
-            break if res.is_a? Net::HTTPSuccess or j >= 50
+            break if res.is_a? Net::HTTPSuccess or j >= 400
           end
 
           res, uri.path = nil, '/api/v1beta1/replicationControllers/kube-dns'
@@ -262,7 +263,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             if OS.windows?
               run_remote "/opt/bin/kubectl create -f /home/core/dns-controller.yaml"
             else
-              system "kubectl create -f temp/dns-controller.yaml"
+              system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f temp/dns-controller.yaml"
             end
           end
 
@@ -275,7 +276,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             if OS.windows?
               run_remote "/opt/bin/kubectl create -f /home/core/dns-service.yaml"
             else
-              system "kubectl create -f dns/dns-service.yaml"
+              system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f dns/dns-service.yaml"
             end
           end
 
@@ -296,7 +297,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
               sleep 10
             end
-            break if hasResponse or j >= 50
+            break if hasResponse or j >= 400
           end
         end
       end
