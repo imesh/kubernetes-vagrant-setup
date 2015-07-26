@@ -30,23 +30,16 @@ If more than one minion is needed, run the below command with the required numbe
 NUM_INSTANCES=2 vagrant up
 ```
 
-Wait until the minion(s) get connected to the cluster. Once the state of the minions are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:
+Wait until the nodes get connected to the cluster. Once the state of the nodes are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:
 
 ```
-kubectl get minions
+kubectl get nodes
 
-Due to some reason get minions command is not working in this Kubernetes version.
+NAME           LABELS                                STATUS
+172.17.8.102   kubernetes.io/hostname=172.17.8.102   Ready
 ```
 
-```
-kubectl get services
-
-NAME            LABELS                                                              SELECTOR           IP(S)         PORT(S)
-kube-dns        k8s-app=kube-dns,kubernetes.io/cluster-service=true,name=kube-dns   k8s-app=kube-dns   10.100.0.10   53/UDP
-                                                                                                                     53/TCP
-kubernetes      component=apiserver,provider=kubernetes                             <none>             10.100.0.2    443/TCP
-kubernetes-ro   component=apiserver,provider=kubernetes                             <none>             10.100.0.1    80/TCP
-```
+Access the Kubernetes UI using the following URL (http://172.17.8.101:8080/ui)[http://172.17.8.101:8080/ui]. If it complains saying that endpoints \"kube-ui\" not found, execute the kube-ui-pod.sh script.
 
 ## Clean-up
 
