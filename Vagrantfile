@@ -63,18 +63,20 @@ SSL_FILE = File.join(File.dirname(__FILE__), "kube-serviceaccount.key")
 USE_DOCKERCFG = ENV['USE_DOCKERCFG'] || false
 DOCKERCFG = File.expand_path(ENV['DOCKERCFG'] || "~/.dockercfg")
 
-KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '0.18.0'
+DOCKER_OPTIONS = ENV['DOCKER_OPTIONS'] || ''
+
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.0.1'
 
 CHANNEL = ENV['CHANNEL'] || 'alpha'
-if CHANNEL != 'alpha'
-  puts "============================================================================="
-  puts "As this is a fastly evolving technology CoreOS' alpha channel is the only one"
-  puts "expected to behave reliably. While one can invoke the beta or stable channels"
-  puts "please be aware that your mileage may vary a whole lot."
-  puts "So, before submitting a bug, in this project, or upstreams (either kubernetes"
-  puts "or CoreOS) please make sure it (also) happens in the (default) alpha channel."
-  puts "============================================================================="
-end
+#if CHANNEL != 'alpha'
+#  puts "============================================================================="
+#  puts "As this is a fastly evolving technology CoreOS' alpha channel is the only one"
+#  puts "expected to behave reliably. While one can invoke the beta or stable channels"
+#  puts "please be aware that your mileage may vary a whole lot."
+#  puts "So, before submitting a bug, in this project, or upstreams (either kubernetes"
+#  puts "or CoreOS) please make sure it (also) happens in the (default) alpha channel."
+#  puts "============================================================================="
+#end
 
 COREOS_VERSION = ENV['COREOS_VERSION'] || 'latest'
 upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
@@ -85,12 +87,12 @@ if COREOS_VERSION == "latest"
     open(url).read().scan(/COREOS_VERSION=.*/)[0].gsub('COREOS_VERSION=', ''))
 end
 
-NUM_INSTANCES = ENV['NUM_INSTANCES'] || 2
+NUM_INSTANCES = ENV['NUM_INSTANCES'] || 1
 
 MASTER_MEM = ENV['MASTER_MEM'] || 1024
 MASTER_CPUS = ENV['MASTER_CPUS'] || 1
 
-NODE_MEM= ENV['NODE_MEM'] || 2048
+NODE_MEM= ENV['NODE_MEM'] || 4096
 NODE_CPUS = ENV['NODE_CPUS'] || 1
 
 BASE_IP_ADDR = ENV['BASE_IP_ADDR'] || "172.17.8"
@@ -171,8 +173,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.proxy.https = HTTPS_PROXY
     # most http tools, like wget and curl do not undestand IP range
     # thus adding each node one by one to no_proxy
+    no_proxies = NO_PROXY.split(",")
     (1..(NUM_INSTANCES.to_i + 1)).each do |i|
-      Object.redefine_const(:NO_PROXY, "#{NO_PROXY},#{BASE_IP_ADDR}.#{i+100}")
+      vm_ip_addr = "#{BASE_IP_ADDR}.#{i+100}"
+      Object.redefine_const(:NO_PROXY,
+        "#{NO_PROXY},#{vm_ip_addr}") unless no_proxies.include?(vm_ip_addr)
     end
     config.proxy.no_proxy = NO_PROXY
     # proxyconf plugin use wrong approach to set Docker proxy for CoreOS
@@ -196,6 +201,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     config.vm.define vmName = hostname do |kHost|
       kHost.vm.hostname = vmName
+
+      # suspend / resume is hard to be properly supported because we have no way
+      # to assure the fully deterministic behavior of whatever is inside the VMs
+      # when faced with XXL clock gaps... so we just disable this functionality.
+      kHost.trigger.reject [:suspend, :resume] do
+        info "'vagrant suspend' and 'vagrant resume' are disabled."
+        info "- please do use 'vagrant halt' and 'vagrant up' instead."
+      end
+
+      config.trigger.instead_of :reload do
+        exec "vagrant halt && vagrant up"
+        exit
+      end
+
       # vagrant-triggers has no concept of global triggers so to avoid having
       # then to run as many times as the total number of VMs we only call them
       # in the master (re: emyl/vagrant-triggers#13)...
@@ -254,7 +273,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             break if res.is_a? Net::HTTPSuccess or j >= 400
           end
 
-          res, uri.path = nil, '/api/v1beta1/replicationControllers/kube-dns'
+          res, uri.path = nil, '/api/v1/namespaces/default/replicationControllers/kube-dns'
           begin
             res = Net::HTTP.get_response(uri)
           rescue
@@ -267,7 +286,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             end
           end
 
-          res, uri.path = nil, '/api/v1beta1/services/kube-dns'
+          res, uri.path = nil, '/api/v1/namespaces/default/services/kube-dns'
           begin
             res = Net::HTTP.get_response(uri)
           rescue
@@ -348,6 +367,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           vb.gui = GUI
         end
       end
+      ["vmware_fusion", "vmware_workstation"].each do |h|
+        kHost.vm.provider h do |v|
+          v.vmx["memsize"] = memory
+          v.vmx["numvcpus"] = cpus
+        end
+      end
       ["parallels", "virtualbox"].each do |h|
         kHost.vm.provider h do |n|
           n.memory = memory
@@ -397,7 +422,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       end
 
       if File.exist?(SSL_FILE)
-        kHost.vm.provision :file, :source => "#{SSL_FILE}", :destination => "/tmp/kube-serviceaccount.key"
+        kHost.vm.provision :file, :source => "#{SSL_FILE}", :destination => "/home/core/kube-serviceaccount.key"
       end
 
       if File.exist?(cfg)
@@ -405,24 +430,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         if enable_proxy
           kHost.vm.provision :shell, :privileged => true,
           inline: <<-EOF
-          sed -i "s|__PROXY_LINE__||g" /tmp/vagrantfile-user-data
-          sed -i "s|__HTTP_PROXY__|#{HTTP_PROXY}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__HTTPS_PROXY__|#{HTTPS_PROXY}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__NO_PROXY__|#{NO_PROXY}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__PROXY_LINE__||g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__HTTP_PROXY__|#{HTTP_PROXY}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__HTTPS_PROXY__|#{HTTPS_PROXY}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__NO_PROXY__|#{NO_PROXY}|g" /tmp/vagrantfile-user-data
           EOF
         end
         kHost.vm.provision :shell, :privileged => true,
         inline: <<-EOF
-          sed -i "/__PROXY_LINE__/d" /tmp/vagrantfile-user-data
-          sed -i "s,__RELEASE__,v#{KUBERNETES_VERSION},g" /tmp/vagrantfile-user-data
-          sed -i "s,__CHANNEL__,v#{CHANNEL},g" /tmp/vagrantfile-user-data
-          sed -i "s,__NAME__,#{hostname},g" /tmp/vagrantfile-user-data
-          sed -i "s,__CLOUDPROVIDER__,#{CLOUD_PROVIDER},g" /tmp/vagrantfile-user-data
-          sed -i "s|__MASTER_IP__|#{MASTER_IP}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__DNS_DOMAIN__|#{DNS_DOMAIN}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__ETCD_SEED_CLUSTER__|#{ETCD_SEED_CLUSTER}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__NODE_CPUS__|#{NODE_CPUS}|g" /tmp/vagrantfile-user-data
-          sed -i "s|__NODE_MEM__|#{NODE_MEM}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "/__PROXY_LINE__/d" /tmp/vagrantfile-user-data
+          sed -i"*" "s,__DOCKER_OPTIONS__,#{DOCKER_OPTIONS},g" /tmp/vagrantfile-user-data
+          sed -i"*" "s,__RELEASE__,v#{KUBERNETES_VERSION},g" /tmp/vagrantfile-user-data
+          sed -i"*" "s,__CHANNEL__,v#{CHANNEL},g" /tmp/vagrantfile-user-data
+          sed -i"*" "s,__NAME__,#{hostname},g" /tmp/vagrantfile-user-data
+          sed -i"*" "s,__CLOUDPROVIDER__,#{CLOUD_PROVIDER},g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__MASTER_IP__|#{MASTER_IP}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__DNS_DOMAIN__|#{DNS_DOMAIN}|g" /tmp/vagrantfile-user-data
+          sed -i"*" "s|__ETCD_SEED_CLUSTER__|#{ETCD_SEED_CLUSTER}|g" /tmp/vagrantfile-user-data
           mv /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
         EOF
       end

@@ -39,8 +39,8 @@ spec:
             memory: 50Mi
         args:
         # command = "/kube2sky"
-        - -kube_master_url=http://__MASTER_IP__:8080 
-        - -domain=__DNS_DOMAIN__
+        - -kube_master_url=http://172.17.8.101:8080 
+        - -domain=cluster.local
       - name: skydns
         image: gcr.io/google_containers/skydns:2015-03-11-001
         resources:
@@ -51,8 +51,8 @@ spec:
         # command = "/skydns"
         - -machines=http://localhost:2379
         - -addr=0.0.0.0:53
-        - -domain=__DNS_DOMAIN__
-        - -nameservers=__DNS_UPSTREAM_SERVERS__
+        - -domain=cluster.local
+        - -nameservers=8.8.8.8:53,8.8.4.4:53
         ports:
         - containerPort: 53
           name: dns
@@ -65,7 +65,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - nslookup kubernetes.default.svc.__DNS_DOMAIN__ localhost >/dev/null
+            - nslookup kubernetes.default.svc.cluster.local localhost >/dev/null
           initialDelaySeconds: 30
           timeoutSeconds: 5
       dnsPolicy: Default  # Don't use cluster DNS.
