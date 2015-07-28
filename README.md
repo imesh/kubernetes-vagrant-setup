@@ -18,16 +18,16 @@ Disable DHCP server in VirtualBox:
 VBoxManage dhcpserver remove --netname HostInterfaceNetworking-vboxnet0
 ```
 
-Execute the following vagrant command to start the Kubernetes cluster, this will start one master node and one minion:
+Execute the following bash script to start a new Kubernetes cluster, this will start one master node and one minion:
 
 ```
-vagrant up 
+run.sh
 ```
 
 If more than one minion is needed, run the below command with the required number of instances:
 
 ```
-NUM_INSTANCES=2 vagrant up
+run.sh NUM_INSTANCES=2
 ```
 
 Wait until the nodes get connected to the cluster. Once the state of the nodes are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:

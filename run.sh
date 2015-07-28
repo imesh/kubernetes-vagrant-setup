@@ -28,8 +28,7 @@ http_server_pid=$!
 popd
 
 #echo "Starting vagrant setup..."
-#vagrant up
-sleep 1
+$* vagrant up
 
 echo "Stopping http server..."
 kill ${http_server_pid}
