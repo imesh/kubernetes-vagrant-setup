@@ -87,7 +87,7 @@ if COREOS_VERSION == "latest"
     open(url).read().scan(/COREOS_VERSION=.*/)[0].gsub('COREOS_VERSION=', ''))
 end
 
-NUM_INSTANCES = ENV['NUM_INSTANCES'] || 1
+NUM_INSTANCES = ENV['NUM_INSTANCES'] || 2
 
 MASTER_MEM = ENV['MASTER_MEM'] || 1024
 MASTER_CPUS = ENV['MASTER_CPUS'] || 1
