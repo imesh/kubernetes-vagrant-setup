@@ -23,7 +23,7 @@ set -e
 
 echo "Starting http server..."
 pushd kubernetes/
-python http-server.py &
+python http-server.py > /dev/null 2>&1 &
 http_server_pid=$!
 popd
 
