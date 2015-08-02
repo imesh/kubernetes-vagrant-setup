@@ -30,6 +30,12 @@ If more than one minion is needed, run the below command with the required numbe
 run.sh NUM_INSTANCES=2
 ```
 
+If you need to specify minion's Memory and CPU, use following command:
+
+```
+run.sh NUM_INSTANCES=2 NODE_MEM=4096 NODE_CPUS=2
+```
+
 Wait until the nodes get connected to the cluster. Once the state of the nodes are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:
 
 ```
@@ -39,7 +45,7 @@ NAME           LABELS                                STATUS
 172.17.8.102   kubernetes.io/hostname=172.17.8.102   Ready
 ```
 
-Access the Kubernetes UI using the following URL (http://172.17.8.101:8080/ui)[http://172.17.8.101:8080/ui]. If it complains saying that endpoints \"kube-ui\" not found, execute the kube-ui-pod.sh script.
+Access the Kubernetes UI using the following URL [http://172.17.8.101:8080/ui](http://172.17.8.101:8080/ui). If it complains saying that endpoints \"kube-ui\" not found, execute the kube-ui-pod.sh script.
 
 ## Clean-up
 
