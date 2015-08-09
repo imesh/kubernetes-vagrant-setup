@@ -30,10 +30,10 @@ popd
 #echo "Starting vagrant setup..."
 eval "$* vagrant up"
 
-echo "Stopping http server..."
-kill ${http_server_pid}
-
 echo "Creating kubernetes ui pod..."
 kubectl create -f kube-ui-rc.yaml --namespace=kube-system
 kubectl create -f kube-ui-svc.yaml --namespace=kube-system
+
+echo "Stopping http server..."
+kill ${http_server_pid}
 
