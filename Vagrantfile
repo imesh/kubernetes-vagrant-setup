@@ -58,14 +58,14 @@ Vagrant.require_version ">= 1.6.0"
 
 MASTER_YAML = File.join(File.dirname(__FILE__), "master.yaml")
 NODE_YAML = File.join(File.dirname(__FILE__), "node.yaml")
-SSL_FILE = File.join(File.dirname(__FILE__), "kube-serviceaccount.key")
+CERTS_SCRIPT = File.join(File.dirname(__FILE__), "make-certs.sh")
 
 USE_DOCKERCFG = ENV['USE_DOCKERCFG'] || false
 DOCKERCFG = File.expand_path(ENV['DOCKERCFG'] || "~/.dockercfg")
 
 DOCKER_OPTIONS = ENV['DOCKER_OPTIONS'] || ''
 
-KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.0.6'
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.1.7'
 
 CHANNEL = ENV['CHANNEL'] || 'alpha'
 #if CHANNEL != 'alpha'
@@ -78,7 +78,7 @@ CHANNEL = ENV['CHANNEL'] || 'alpha'
 #  puts "============================================================================="
 #end
 
-COREOS_VERSION = ENV['COREOS_VERSION'] || '789.0.0'
+COREOS_VERSION = ENV['COREOS_VERSION'] || 'latest'
 upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
 if COREOS_VERSION == "latest"
   upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/current"
@@ -87,7 +87,7 @@ if COREOS_VERSION == "latest"
     open(url).read().scan(/COREOS_VERSION=.*/)[0].gsub('COREOS_VERSION=', ''))
 end
 
-NUM_INSTANCES = ENV['NUM_INSTANCES'] || 1
+NODES = ENV['NODES'] || 1
 
 MASTER_MEM = ENV['MASTER_MEM'] || 1024
 MASTER_CPUS = ENV['MASTER_CPUS'] || 1
@@ -102,6 +102,9 @@ DNS_UPSTREAM_SERVERS = ENV['DNS_UPSTREAM_SERVERS'] || "8.8.8.8:53,8.8.4.4:53"
 
 SERIAL_LOGGING = (ENV['SERIAL_LOGGING'].to_s.downcase == 'true')
 GUI = (ENV['GUI'].to_s.downcase == 'true')
+USE_KUBE_UI = ENV['USE_KUBE_UI'] || false
+
+BOX_TIMEOUT_COUNT = ENV['BOX_TIMEOUT_COUNT'] || 50
 
 if enable_proxy
   HTTP_PROXY = ENV['HTTP_PROXY'] || ENV['http_proxy']
@@ -117,16 +120,6 @@ validCloudProviders = [ 'gce', 'gke', 'aws', 'azure', 'vagrant', 'vsphere',
   'libvirt-coreos', 'juju' ]
 Object.redefine_const(:CLOUD_PROVIDER,
   '') unless validCloudProviders.include?(CLOUD_PROVIDER)
-
-(1..(NUM_INSTANCES.to_i + 1)).each do |i|
-  case i
-  when 1
-    hostname = "master"
-    ETCD_SEED_CLUSTER = "#{hostname}=http://#{BASE_IP_ADDR}.#{i+100}:2380"
-  else
-    hostname = ",node-%02d" % (i - 1)
-  end
-end
 
 # Read YAML file with mountpoint details
 MOUNT_POINTS = YAML::load_file('synced_folders.yaml')
@@ -174,7 +167,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     # most http tools, like wget and curl do not undestand IP range
     # thus adding each node one by one to no_proxy
     no_proxies = NO_PROXY.split(",")
-    (1..(NUM_INSTANCES.to_i + 1)).each do |i|
+    (1..(NODES.to_i + 1)).each do |i|
       vm_ip_addr = "#{BASE_IP_ADDR}.#{i+100}"
       Object.redefine_const(:NO_PROXY,
         "#{NO_PROXY},#{vm_ip_addr}") unless no_proxies.include?(vm_ip_addr)
@@ -185,9 +178,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     config.proxy.enabled = { docker: false }
   end
 
-  (1..(NUM_INSTANCES.to_i + 1)).each do |i|
+  (1..(NODES.to_i + 1)).each do |i|
     if i == 1
       hostname = "master"
+      ETCD_SEED_CLUSTER = "#{hostname}=http://#{BASE_IP_ADDR}.#{i+100}:2380"
       cfg = MASTER_YAML
       memory = MASTER_MEM
       cpus = MASTER_CPUS
@@ -234,17 +228,24 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
           system "chmod +x temp/setup"
 
           info "Configuring Kubernetes cluster DNS..."
-          system "cp dns/dns-controller.yaml.tmpl temp/dns-controller.yaml"
+          kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "kube-system.yaml"), :destination => "/home/core/kube-system.yaml"
+          system "cp plugins/dns/dns-controller.yaml.tmpl temp/dns-controller.yaml"
           system "sed -e 's|__MASTER_IP__|#{MASTER_IP}|g' -i#{sedInplaceArg} ./temp/dns-controller.yaml"
           system "sed -e 's|__DNS_DOMAIN__|#{DNS_DOMAIN}|g' -i#{sedInplaceArg} ./temp/dns-controller.yaml"
           system "sed -e 's|__DNS_UPSTREAM_SERVERS__|#{DNS_UPSTREAM_SERVERS}|g' -i#{sedInplaceArg} ./temp/dns-controller.yaml"
-        end
 
-        if OS.windows?
-          kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "temp/setup"), :destination => "/home/core/kubectlsetup"
-          kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "temp/dns-controller.yaml"), :destination => "/home/core/dns-controller.yaml"
-          kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "dns/dns-service.yaml"), :destination => "/home/core/dns-service.yaml"
-        end
+          if OS.windows?
+            kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "temp/setup"), :destination => "/home/core/kubectlsetup"
+            kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "temp/dns-controller.yaml"), :destination => "/home/core/dns-controller.yaml"
+            kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "plugins/dns/dns-service.yaml"), :destination => "/home/core/dns-service.yaml"
+
+            if USE_KUBE_UI
+              kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "kube-system.yaml"), :destination => "/home/core/kube-system.yaml"
+              kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "plugins/kube-ui/kube-ui-controller.yaml"), :destination => "/home/core/kube-ui-controller.yaml"
+              kHost.vm.provision :file, :source => File.join(File.dirname(__FILE__), "plugins/kube-ui/kube-ui-service.yaml"), :destination => "/home/core/kube-ui-service.yaml"
+            end
+          end
+      end
 
         kHost.trigger.after [:up, :resume] do
           info "Sanitizing stuff..."
@@ -253,15 +254,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
 
         kHost.trigger.after [:up] do
-          info "Installing kubectl for the kubernetes version we just bootstrapped..."
-          if OS.windows?
-            run_remote "sudo -u core /bin/sh /home/core/kubectlsetup install"
-          else
-            system "./temp/setup install"
-          end
-
           info "Waiting for Kubernetes master to become ready..."
-          info "Connecting to http://#{MASTER_IP}:8080"
           j, uri, res = 0, URI("http://#{MASTER_IP}:8080"), nil
           loop do
             j += 1
@@ -270,18 +263,27 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
               sleep 10
             end
-            break if res.is_a? Net::HTTPSuccess or j >= 400
+            break if res.is_a? Net::HTTPSuccess or j >= BOX_TIMEOUT_COUNT
           end
 
-          res, uri.path = nil, '/api/v1/namespaces/default/replicationControllers/kube-dns'
+          info "Installing kubectl for the Kubernetes version we just bootstrapped..."
+          if OS.windows?
+            run_remote "sudo -u core /bin/sh /home/core/kubectlsetup install"
+          else
+            system "./temp/setup install"
+          end
+
+          res, uri.path = nil, '/api/v1/namespaces/default/replicationcontrollers/kube-dns'
           begin
             res = Net::HTTP.get_response(uri)
           rescue
           end
           if not res.is_a? Net::HTTPSuccess
             if OS.windows?
+              run_remote "/opt/bin/kubectl create -f /home/core/kube-system.yaml"
               run_remote "/opt/bin/kubectl create -f /home/core/dns-controller.yaml"
             else
+              system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f kube-system.yaml"
               system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f temp/dns-controller.yaml"
             end
           end
@@ -295,8 +297,52 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             if OS.windows?
               run_remote "/opt/bin/kubectl create -f /home/core/dns-service.yaml"
             else
-              system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f dns/dns-service.yaml"
+              system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/dns/dns-service.yaml"
             end
+          end
+
+          if USE_KUBE_UI
+            info "Configuring Kubernetes kube-ui..."
+            res, uri.path = nil, '/api/v1/namespaces/kube-system'
+            begin
+              res = Net::HTTP.get_response(uri)
+            rescue
+            end
+            if not res.is_a? Net::HTTPSuccess
+              if OS.windows?
+                run_remote "/opt/bin/kubectl create -f /home/core/kube-system.yaml"
+              else
+                system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f kube-system.yaml"
+              end
+            end
+
+            res, uri.path = nil, '/api/v1/namespaces/kube-system/replicationcontrollers/kube-ui-v3'
+            begin
+              res = Net::HTTP.get_response(uri)
+            rescue
+            end
+            if not res.is_a? Net::HTTPSuccess
+              if OS.windows?
+                run_remote "/opt/bin/kubectl create -f /home/core/kube-ui-controller.yaml"
+              else
+                system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/kube-ui/kube-ui-controller.yaml"
+              end
+            end
+
+            res, uri.path = nil, '/api/v1/namespaces/kube-system/services/kube-ui'
+            begin
+              res = Net::HTTP.get_response(uri)
+            rescue
+            end
+            if not res.is_a? Net::HTTPSuccess
+              if OS.windows?
+                run_remote "/opt/bin/kubectl create -f /home/core/kube-ui-service.yaml"
+              else
+                system "KUBERNETES_MASTER=\"http://#{MASTER_IP}:8080\" kubectl create -f plugins/kube-ui/kube-ui-service.yaml"
+              end
+            end
+
+            info "Kubernetes kube-ui will be available on http://#{MASTER_IP}:8080/ui"
           end
 
         end
@@ -316,7 +362,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             rescue
               sleep 10
             end
-            break if hasResponse or j >= 400
+            break if hasResponse or j >= BOX_TIMEOUT_COUNT
           end
         end
       end
@@ -421,8 +467,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
       end
 
-      if File.exist?(SSL_FILE)
-        kHost.vm.provision :file, :source => "#{SSL_FILE}", :destination => "/home/core/kube-serviceaccount.key"
+      if File.exist?(CERTS_SCRIPT)
+        kHost.vm.provision :file, :source => "#{CERTS_SCRIPT}", :destination => "/tmp/make-certs.sh"
       end
 
       if File.exist?(cfg)

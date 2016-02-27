@@ -21,8 +21,8 @@
 # ----------------------------------------------------------------
 set -e
 
-echo "Starting http server..."
-pushd kubernetes/
+echo "Starting http server at http://localhost:8000"
+pushd bin/kubernetes/
 python http-server.py > /dev/null 2>&1 &
 http_server_pid=$!
 popd
@@ -30,10 +30,8 @@ popd
 #echo "Starting vagrant setup..."
 eval "$* vagrant up"
 
-echo "Creating kubernetes ui pod..."
-kubectl create -f kube-ui-rc.yaml --namespace=kube-system
-kubectl create -f kube-ui-svc.yaml --namespace=kube-system
+echo "Deploying kubernetes UI..."
+kubectl create -f plugins/kube-ui/ --namespace=kube-system
 
 echo "Stopping http server..."
 kill ${http_server_pid}
-
