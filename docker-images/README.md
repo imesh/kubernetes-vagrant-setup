@@ -1,1 +1,0 @@
-devops/docker-registry
