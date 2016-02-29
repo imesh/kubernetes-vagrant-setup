@@ -1,7 +1,7 @@
 # kubernetes-vagrant-setup
-A vagrant script for setting up a **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)** (1.0.1)
-cluster on 
-**[CoreOS](https://coreos.com)** [(alpha/752.1.0)](https://coreos.com/releases/). This repository was forked from  [Pires](https://github.com/pires)'s [github repository](https://github.com/pires/kubernetes-vagrant-coreos-cluster) and changed according to Apache Stratos requirements. All the credit goes to [Pires](https://github.com/pires) for implementing this awesome Vagrant module.
+A vagrant script for setting up a **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)** (1.1.7)
+cluster on
+**[CoreOS](https://coreos.com)** [(alpha/969.0.0)](https://coreos.com/releases/). This repository was forked from  [Pires](https://github.com/pires)'s [github repository](https://github.com/pires/kubernetes-vagrant-coreos-cluster) and changed according to Apache Stratos requirements. All the credit goes to [Pires](https://github.com/pires) for implementing this awesome Vagrant module.
 
 ## Pre-requisites
 
