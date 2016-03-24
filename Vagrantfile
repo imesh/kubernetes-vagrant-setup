@@ -65,7 +65,7 @@ DOCKERCFG = File.expand_path(ENV['DOCKERCFG'] || "~/.dockercfg")
 
 DOCKER_OPTIONS = ENV['DOCKER_OPTIONS'] || ''
 
-KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.1.7'
+KUBERNETES_VERSION = ENV['KUBERNETES_VERSION'] || '1.2.0'
 
 CHANNEL = ENV['CHANNEL'] || 'alpha'
 #if CHANNEL != 'alpha'
@@ -273,7 +273,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             system "./temp/setup install"
           end
 
-          res, uri.path = nil, '/api/v1/namespaces/default/replicationcontrollers/kube-dns'
+          res, uri.path = nil, '/api/v1/namespaces/kube-system/replicationcontrollers/kube-dns'
           begin
             res = Net::HTTP.get_response(uri)
           rescue
@@ -288,7 +288,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             end
           end
 
-          res, uri.path = nil, '/api/v1/namespaces/default/services/kube-dns'
+          res, uri.path = nil, '/api/v1/namespaces/kube-system/services/kube-dns'
           begin
             res = Net::HTTP.get_response(uri)
           rescue

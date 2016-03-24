@@ -21,11 +21,11 @@
 # ----------------------------------------------------------------
 set -e
 
-echo "Starting http server at http://localhost:8000"
-pushd bin/kubernetes/
-python http-server.py > /dev/null 2>&1 &
-http_server_pid=$!
-popd
+SECONDS=0
+#echo "Starting http server at http://localhost:8000"
+#pushd bin/kubernetes/
+#python http-server.py > /dev/null 2>&1 &
+#popd
 
 #echo "Starting vagrant setup..."
 eval "$* vagrant up"
@@ -33,5 +33,10 @@ eval "$* vagrant up"
 echo "Deploying kubernetes UI..."
 kubectl create -f plugins/kube-ui/ --namespace=kube-system
 
-echo "Stopping http server..."
-kill ${http_server_pid}
+echo "Deploying kubernetes dashboard..."
+kubectl create -f plugins/kubernetes-dashboard/ --namespace=kube-system
+
+#echo "Stopping http server..."
+#pkill http-server.py || true
+duration=$SECONDS
+echo "Kubernetes cluster started in $(($duration / 60)) minutes and $(($duration % 60)) seconds"

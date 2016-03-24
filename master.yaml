@@ -39,6 +39,22 @@ coreos:
     - name: rpc-statd.service
       enable: true
       command: start
+    - name: docker-load.service
+      command: start
+      content: |
+        [Unit]
+        Description=Load docker images
+        Requires=docker.service
+        Before=docker-cache.service
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/environment
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/docker-registry.latest.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/etcd.2.0.9.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/kube-registry-proxy.0.3.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/pause.2.0.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/flannel.0.5.5.tar.gz
+        ExecStart=-/usr/bin/echo "--- docker images loaded completely! ---"
     - name: docker-cache.service
       command: start
       content: |
@@ -55,7 +71,7 @@ coreos:
         Environment="DOCKER_HOST=unix:///var/run/early-docker.sock"
         ExecStartPre=-/usr/bin/docker kill docker-registry
         ExecStartPre=-/usr/bin/docker rm docker-registry
-        ExecStartPre=/usr/bin/docker pull quay.io/devops/docker-registry:latest
+        ExecStartPre=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/docker-registry.latest.tar.gz
         # GUNICORN_OPTS is an workaround for
         # https://github.com/docker/docker-registry/issues/892
         ExecStart=/usr/bin/docker run --rm --net host --name docker-registry \
@@ -105,9 +121,9 @@ coreos:
         Type=oneshot
         EnvironmentFile=/etc/environment
         ExecStart=-/usr/bin/mkdir -p /opt/bin
-        ExecStart=/usr/bin/wget -P /opt/bin http://172.17.8.1:8000/__RELEASE__/linux/amd64/kube-apiserver
-        ExecStart=/usr/bin/wget -P /opt/bin http://172.17.8.1:8000/__RELEASE__/linux/amd64/kube-controller-manager
-        ExecStart=/usr/bin/wget -P /opt/bin http://172.17.8.1:8000/__RELEASE__/linux/amd64/kube-scheduler
+        ExecStart=/usr/bin/cp -vf /vagrant/bin/kubernetes/v1.2.0/linux/amd64/kube-apiserver /opt/bin/kube-apiserver
+        ExecStart=/usr/bin/cp -vf /vagrant/bin/kubernetes/v1.2.0/linux/amd64/kube-controller-manager /opt/bin/kube-controller-manager
+        ExecStart=/usr/bin/cp -vf /vagrant/bin/kubernetes/v1.2.0/linux/amd64/kube-scheduler /opt/bin/kube-scheduler
         ExecStart=/usr/bin/chmod +x /opt/bin/kube-apiserver
         ExecStart=/usr/bin/chmod +x /opt/bin/kube-controller-manager
         ExecStart=/usr/bin/chmod +x /opt/bin/kube-scheduler

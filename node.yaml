@@ -36,6 +36,24 @@ coreos:
     - name: rpc-statd.service
       enable: true
       command: start
+    - name: docker-load.service
+      command: start
+      content: |
+        [Unit]
+        Description=Load docker images
+        Requires=docker.service
+        After=docker.service
+        [Service]
+        Type=oneshot
+        EnvironmentFile=/etc/environment
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/skydns.2015.10.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/kube-ui.v3.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/exechealthz.1.0.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/kube2sky.1.11.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/pause.2.0.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/etcd.2.0.9.tar.gz
+        ExecStart=/usr/bin/docker load -i /vagrant/bin/kubernetes/v1.2.0/docker/images/kubernetes-dashboard.1.0.0.tar.gz
+        ExecStart=-/usr/bin/echo "--- docker images loaded completely! ---"
     - name: flanneld.service
       command: start
       drop-ins:
@@ -77,12 +95,13 @@ coreos:
         Description=Download/Install Kubernetes
         Requires=network-online.target
         After=network-online.target
+        Before=kube-proxy.service
         [Service]
         Type=oneshot
         EnvironmentFile=/etc/environment
         ExecStart=-/usr/bin/mkdir -p /opt/bin
-        ExecStart=/usr/bin/wget -P /opt/bin http://172.17.8.1:8000/__RELEASE__/linux/amd64/kube-proxy
-        ExecStart=/usr/bin/wget -P /opt/bin http://172.17.8.1:8000/__RELEASE__/linux/amd64/kubelet
+        ExecStart=/usr/bin/cp -vf /vagrant/bin/kubernetes/v1.2.0/linux/amd64/kube-proxy /opt/bin/kube-proxy
+        ExecStart=/usr/bin/cp -vf /vagrant/bin/kubernetes/v1.2.0/linux/amd64/kubelet /opt/bin/kubelet
         ExecStart=/usr/bin/chmod +x /opt/bin/kube-proxy
         ExecStart=/usr/bin/chmod +x /opt/bin/kubelet
     - name: kube-proxy.service
