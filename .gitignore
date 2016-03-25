@@ -11,5 +11,8 @@
 *.ipr
 *.iws
 
-#python bytecode
+# Python bytecode
 *.pyc
+
+# Docker images
+*.tar.gz
