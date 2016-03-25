@@ -38,14 +38,14 @@ function echoBold () {
 
 function docker_pull() {
   image_tag=$1
-  echoBold "--> docker pull ${image_tag}"
+  echoBold "==> docker pull ${image_tag}"
   docker pull ${image_tag}
 }
 
 function docker_save() {
   image_tag=$1
   file_name=$2
-  echoBold "--> docker save ${image_tag} > ${file_name}"
+  echoBold "==> docker save ${image_tag} > ${file_name}"
   docker save ${image_tag} > ${file_name}
 }
 
