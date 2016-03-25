@@ -98,4 +98,5 @@ echoBold "Deploying kubernetes dashboard..."
 kubectl create -f plugins/kubernetes-dashboard/ --namespace=kube-system
 
 duration=$SECONDS
+kubectl cluster-info
 echoSuccess "Kubernetes cluster started in $(($duration / 60)) minutes and $(($duration % 60)) seconds"
