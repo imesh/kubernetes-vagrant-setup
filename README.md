@@ -10,7 +10,6 @@ All the credit goes to [Pires](https://github.com/pires) for implementing this a
 
  * **[Vagrant 1.7.2+](https://www.vagrantup.com)**
  * **[Virtualbox 4.3.20+](https://www.virtualbox.org)**
- * **[Wget] (http://www.gnu.org/software/wget)**
 
 ## How to Run
 
@@ -30,13 +29,13 @@ run.sh
 If more than one minion is needed, run the below command with the required number of instances:
 
 ```
-run.sh NUM_INSTANCES=2
+run.sh NODES=2
 ```
 
 If you need to specify minion's Memory and CPU, use following command:
 
 ```
-run.sh NUM_INSTANCES=2 NODE_MEM=4096 NODE_CPUS=2
+run.sh NODES=2 NODE_MEM=4096 NODE_CPUS=2
 ```
 
 Wait until the nodes get connected to the cluster. Once the state of the nodes are changed to Ready, the Kubernetes cluster is ready for use. Execute following Kubernetes CLI commands and verify their status:
@@ -48,7 +47,7 @@ NAME           LABELS                                STATUS
 172.17.8.102   kubernetes.io/hostname=172.17.8.102   Ready
 ```
 
-Access the Kubernetes UI using the following URL [http://172.17.8.101:8080/ui](http://172.17.8.101:8080/ui). If it complains saying that endpoints \"kube-ui\" not found, execute the kube-ui-pod.sh script.
+Access the Kubernetes dashboard using the following URL [http://172.17.8.101:8080/ui](http://172.17.8.101:8080/ui).
 
 ## Clean-up
 
@@ -57,10 +56,10 @@ Execute the following command to remove the virtual machines created for the Kub
 vagrant destroy
 ```
 
-If you've set `NUM_INSTANCES` or any other variable when deploying, please make sure you set it in `vagrant destroy` call above, like:
+If you've set `NODES` or any other variable when deploying, please make sure you set it in `vagrant destroy` call above, like:
 
 ```
-NUM_INSTANCES=2 vagrant destroy
+NODES=2 vagrant destroy
 ```
 
 ## Licensing
