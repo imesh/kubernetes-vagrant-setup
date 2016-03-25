@@ -1,4 +1,5 @@
-# kubernetes-vagrant-setup
+# Kubernetes Vagrant Setup
+
 A vagrant script for setting up a **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)** (v1.2.0)
 cluster on
 **[CoreOS](https://coreos.com)** [(alpha/991.0.0)](https://coreos.com/releases/). This repository was forked from  [Pires](https://github.com/pires)'s [github repository](https://github.com/pires/kubernetes-vagrant-coreos-cluster) and improved the startup time by directly copying Kubernetes binary and docker files into the virtual machines without downloading them from the internet each time. [Kubernetes binary](bin/kubernetes/v1.2.0/linux/amd64/) has been added to the git repository and [docker files](bin/kubernetes/v1.2.0/docker/images/) are designed to be downloaded in the first run.
