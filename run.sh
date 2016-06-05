@@ -56,7 +56,7 @@ else
   echoBold "Trying to pull docker images, this is a one time operation..."
 
   if ! [ -x "$(command -v docker)" ]; then
-    echoError 'Docker is not installed'
+    echoError "Docker is not installed"
     exit 1
   fi
 
