@@ -56,8 +56,15 @@ else
   echoBold "Trying to pull docker images, this is a one time operation..."
 
   if ! [ -x "$(command -v docker)" ]; then
-    echoError 'Docker is not installed, existing...' >&2
+    echoError 'Docker is not installed'
     exit 1
+  fi
+
+  if [ -x "$(command -v docker-machine)" ]; then
+    if ! [ "$(docker-machine ls | grep Running)" ]; then
+      echoError "Docker machine is not running"
+      exit 1
+    fi
   fi
 
   docker_pull quay.io/devops/docker-registry:latest
