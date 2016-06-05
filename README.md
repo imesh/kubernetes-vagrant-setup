@@ -2,7 +2,7 @@
 
 A vagrant script for setting up a **[Kubernetes](https://github.com/GoogleCloudPlatform/kubernetes)** (v1.2.0)
 cluster on
-**[CoreOS](https://coreos.com)** [(alpha/991.0.0)](https://coreos.com/releases/). This repository was forked from  [Pires](https://github.com/pires)'s [github repository](https://github.com/pires/kubernetes-vagrant-coreos-cluster) and improved the startup time by directly copying Kubernetes binary and docker files into the virtual machines without downloading them from the internet each time. [Kubernetes binary](bin/kubernetes/v1.2.0/linux/amd64/) has been added to the git repository and [docker files](bin/kubernetes/v1.2.0/docker/images/) are designed to be downloaded in the first run.
+**[CoreOS](https://coreos.com)** [(alpha/991.0.0)](https://coreos.com/releases/). This repository was forked from  [Pires](https://github.com/pires)'s [github repository](https://github.com/pires/kubernetes-vagrant-coreos-cluster) and improved the startup time by directly copying Kubernetes binary and docker files into the virtual machines without downloading them from the internet each time. [Kubernetes binary](bin/kubernetes/v1.2.0/linux/amd64/) has been added to the git repository and [docker images](bin/kubernetes/v1.2.0/docker/images/) are designed to be downloaded in the first run.
 
 All the credit goes to [Pires](https://github.com/pires) for implementing this awesome Vagrant module.
 
@@ -10,6 +10,7 @@ All the credit goes to [Pires](https://github.com/pires) for implementing this a
 
  * **[Vagrant 1.7.2+](https://www.vagrantup.com)**
  * **[Virtualbox 4.3.20+](https://www.virtualbox.org)**
+ * **[Docker Machine](https://docs.docker.com/engine/installation/)** (Required for downloading Kubernetes docker images)
 
 ## How to Run
 
@@ -19,6 +20,8 @@ Disable DHCP server in VirtualBox:
 ```
 VBoxManage dhcpserver remove --netname HostInterfaceNetworking-vboxnet0
 ```
+
+Make sure Docker Machine is running in your localhost.
 
 Execute the following bash script to start a new Kubernetes cluster, this will start one master node and one minion:
 
