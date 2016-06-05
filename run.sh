@@ -98,6 +98,8 @@ fi
 echoBold "Starting vagrant setup..."
 eval "$* vagrant up"
 
+export KUBERNETES_MASTER=http://172.17.8.101:8080
+
 echoBold "Deploying kubernetes UI..."
 kubectl create -f plugins/kube-ui/ --namespace=kube-system
 
