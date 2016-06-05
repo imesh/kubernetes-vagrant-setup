@@ -78,7 +78,7 @@ CHANNEL = ENV['CHANNEL'] || 'alpha'
 #  puts "============================================================================="
 #end
 
-COREOS_VERSION = ENV['COREOS_VERSION'] || 'latest'
+COREOS_VERSION = ENV['COREOS_VERSION'] || '991.0.0'
 upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/#{COREOS_VERSION}"
 if COREOS_VERSION == "latest"
   upstream = "http://#{CHANNEL}.release.core-os.net/amd64-usr/current"
